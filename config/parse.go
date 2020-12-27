@@ -15,16 +15,15 @@ type Config struct {
 	Kafka Kafka
 }
 type Kafka struct {
-	Brokers      []string
-	ConsumerFile string
-	Consumer     Consumer
+	Brokers        []string
+	TopicsFilePath string
+	Consumer       Consumer
+	Topics         map[string]Topic
 }
 
 type Consumer struct {
-	Topics []Topic
 }
 type Topic struct {
-	Name     string
 	Partions int
 }
 
@@ -66,15 +65,19 @@ func validate() error {
 }
 
 func validateConsumerConf() error {
-	if Props.Kafka.ConsumerFile == "" {
+	if Props.Kafka.TopicsFilePath == "" {
 		confBase, _ := utils.GetFileBaseDir(confPath, fileSep)
-		Props.Kafka.ConsumerFile = confBase + "/consumer.json"
+		if confBase == "" {
+			Props.Kafka.TopicsFilePath = "topics.json"
+		} else {
+			Props.Kafka.TopicsFilePath = confBase + "/topics.json"
+		}
 	}
-	consConfData, err := ioutil.ReadFile(Props.Kafka.ConsumerFile)
+	topicsData, err := ioutil.ReadFile(Props.Kafka.TopicsFilePath)
 	if err != nil {
 		return err
 	}
-	err = json.Unmarshal(consConfData, &Props.Kafka.Consumer)
+	err = json.Unmarshal(topicsData, &Props.Kafka.Topics)
 	if err != nil {
 		return err
 	}
