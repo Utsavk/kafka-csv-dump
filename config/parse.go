@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/kafka-csv-dump/utils"
 	"github.com/kataras/golog"
 )
 
@@ -15,16 +14,16 @@ type Config struct {
 	Kafka Kafka
 }
 type Kafka struct {
-	Brokers        []string
-	TopicsFilePath string
-	Consumer       Consumer
-	Topics         map[string]Topic
+	Brokers  []string
+	Consumer Consumer
+	Topics   []Topic
 }
 
 type Consumer struct {
 }
 type Topic struct {
-	Partions int
+	Name     string
+	Partions [2]int
 }
 
 var Props Config
@@ -65,21 +64,6 @@ func validate() error {
 }
 
 func validateConsumerConf() error {
-	if Props.Kafka.TopicsFilePath == "" {
-		confBase, _ := utils.GetFileBaseDir(confPath, fileSep)
-		if confBase == "" {
-			Props.Kafka.TopicsFilePath = "topics.json"
-		} else {
-			Props.Kafka.TopicsFilePath = confBase + "/topics.json"
-		}
-	}
-	topicsData, err := ioutil.ReadFile(Props.Kafka.TopicsFilePath)
-	if err != nil {
-		return err
-	}
-	err = json.Unmarshal(topicsData, &Props.Kafka.Topics)
-	if err != nil {
-		return err
-	}
+
 	return nil
 }

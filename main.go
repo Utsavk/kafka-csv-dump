@@ -2,12 +2,12 @@ package main
 
 import (
 	"github.com/kafka-csv-dump/config"
-	"github.com/kataras/golog"
+	"github.com/kafka-csv-dump/consumer"
 )
 
 func main() {
 	if !config.Parse() {
 		return
 	}
-	golog.Info(config.Props)
+	consumer.Init()
 }
