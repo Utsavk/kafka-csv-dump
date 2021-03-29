@@ -10,20 +10,23 @@ import (
 )
 
 type Config struct {
-	Env   string
-	Kafka Kafka
-}
-type Kafka struct {
-	Brokers  []string
+	Env      string
+	Kafka    Kafka
 	Consumer Consumer
-	Topics   []Topic
+}
+
+type Kafka struct {
+	Brokers []string
+	Topics  []Topic
 }
 
 type Consumer struct {
+	Group string
 }
+
 type Topic struct {
-	Name     string
-	Partions [2]int
+	Name       string
+	Partitions [2]int
 }
 
 var Props Config
