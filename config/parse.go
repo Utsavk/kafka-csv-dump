@@ -21,21 +21,23 @@ type Kafka struct {
 }
 
 type Consumer struct {
-	Group string
+	Group             string
+	ReadTimeOutMS     int64
+	StartOffset       int64
+	PollingIntervalMS int64
 }
 
 type Topic struct {
-	Name       string
-	Partitions [2]int
+	Name        string
+	Partitions  [2]int
+	StartOffset int64
 }
 
 var Props Config
 var confPath string
-var fileSep string
 
 func Parse() bool {
 	confPath = os.Getenv("CONFIG")
-	fileSep = os.Getenv("FILE_SEP")
 	if confPath == "" {
 		golog.Info("no config path provided, parsing conf from <PROJECT_DIR/>service.json")
 		confPath = "service.json"

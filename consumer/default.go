@@ -2,25 +2,54 @@ package consumer
 
 import (
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/kafka-csv-dump/config"
 	"github.com/kataras/golog"
 )
 
+var readTimoutDur, pollingInterval time.Duration
+
 type consumer struct {
-	kobj   *kafka.Consumer
-	Offset int64
-	Topic  string
+	kobj      *kafka.Consumer
+	Offset    int64
+	Topic     string
+	Partition int
 }
 
 func Init() {
-	c, err := createConsumerInstance("test1", 1, -1)
-	if err != nil {
-		golog.Errorf("error in creating consumer instance %s", err.Error())
-		return
+	readTimoutDur = time.Duration(config.Props.Consumer.ReadTimeOutMS) * time.Millisecond
+	pollingInterval = time.Duration(config.Props.Consumer.PollingIntervalMS) * time.Millisecond
+	launchConsumers()
+}
+
+func launchConsumers() {
+	var wg sync.WaitGroup
+	for _, topicConf := range config.Props.Kafka.Topics {
+		for _, partition := range topicConf.Partitions {
+			wg.Add(1)
+			go func(partition int, topicConf config.Topic) {
+				defer func() {
+					wg.Done()
+					if r := recover(); r != nil {
+						golog.Infof("Recovering from panic in consumer init for topic %s and partition %d, error is: %v \n", topicConf.Name, partition, r)
+					}
+				}()
+				startOffset := getStartOffsetValue(topicConf, partition)
+				c, err := createConsumerInstance(topicConf.Name, partition, startOffset)
+				if err != nil {
+					golog.Errorf("error in creating consumer instance %s", err.Error())
+					return
+				}
+				defer c.kobj.Close()
+				golog.Infof("Consumer started, topic=%s partition=%d offset=%d", topicConf.Name, partition, startOffset)
+				c.pollTopicPartiton()
+			}(partition, topicConf)
+		}
 	}
-	c.pollTopicPartiton()
+	wg.Wait()
 }
 
 func (c *consumer) pollTopicPartiton() {
@@ -31,9 +60,11 @@ func (c *consumer) pollTopicPartiton() {
 					golog.Infof("Recovering from panic in pollTopicPartiton error is: %v \n", r)
 				}
 			}()
-			msg, err := c.kobj.ReadMessage(-1)
+			msg, err := c.kobj.ReadMessage(readTimoutDur)
 			if err != nil {
-				golog.Errorf("Consumer error: %v (%v)\n", err, msg)
+				if !strings.Contains(err.Error(), "Local: Timed out") {
+					golog.Errorf("Consumer error: %v (%v)\n", err, msg)
+				}
 				return
 			}
 			if msg == nil {
@@ -42,6 +73,7 @@ func (c *consumer) pollTopicPartiton() {
 				golog.Infof("Message on %s %s: %s\n", "test1", msg.TopicPartition, string(msg.Value))
 			}
 		}()
+		time.Sleep(pollingInterval)
 	}
 }
 
@@ -53,9 +85,6 @@ func createConsumerInstance(topic string, partition int, startOffset int64) (*co
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		c.Close()
-	}()
 	c.Assign([]kafka.TopicPartition{{
 		Topic:     &topic,
 		Partition: int32(partition),
@@ -64,6 +93,6 @@ func createConsumerInstance(topic string, partition int, startOffset int64) (*co
 	if err != nil {
 		return nil, err
 	}
-	cons := &consumer{kobj: c, Offset: startOffset, Topic: topic}
+	cons := &consumer{kobj: c, Offset: startOffset, Topic: topic, Partition: partition}
 	return cons, nil
 }
