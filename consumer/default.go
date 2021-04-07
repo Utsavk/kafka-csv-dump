@@ -54,6 +54,7 @@ func launchConsumers() {
 }
 
 func (c *consumer) pollTopicPartiton(partition int, topicConf config.Topic) {
+	//prepare one time h over here and call h.Hanlde() from it
 	for {
 		func() {
 			defer func() {

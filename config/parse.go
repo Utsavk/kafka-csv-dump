@@ -28,11 +28,11 @@ type Consumer struct {
 }
 
 type Topic struct {
-	Name          string
-	Partitions    [2]int
-	StartOffset   int64
-	Schema        string
-	FileredFields []string
+	Name           string
+	Partitions     [2]int
+	StartOffset    int64
+	Schema         string
+	FilteredFields []string
 }
 
 var Props Config
@@ -71,6 +71,6 @@ func validate() error {
 }
 
 func validateConsumerConf() error {
-
+	//FilteredFields and Schema are mandatory
 	return nil
 }

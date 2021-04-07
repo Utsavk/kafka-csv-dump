@@ -22,18 +22,20 @@ type Handler struct {
 	Fn             parserFn
 }
 
-type parserFn func([]byte) []string
+type parserFn func([]byte, []string) []string
 
 func ProcessData(partition int, topicConf config.Topic, data []byte) {
-	h, err := setHandler(topicConf.Schema, topicConf.FileredFields)
+	//do not create h object everytime
+	h, err := setHandler(topicConf.Schema, topicConf.FilteredFields)
 	if err != nil {
 		golog.Error(err)
 		return
 	}
-	row := h.Fn(data)
+	row := h.Fn(data, h.FilteredFields)
 	if row == nil {
 		return
 	}
+	golog.Info(row)
 	//push to csv
 }
 
