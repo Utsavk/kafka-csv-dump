@@ -28,9 +28,11 @@ type Consumer struct {
 }
 
 type Topic struct {
-	Name        string
-	Partitions  [2]int
-	StartOffset int64
+	Name          string
+	Partitions    [2]int
+	StartOffset   int64
+	Schema        string
+	FileredFields []string
 }
 
 var Props Config

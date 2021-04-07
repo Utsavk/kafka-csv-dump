@@ -7,6 +7,7 @@ import (
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/kafka-csv-dump/config"
+	"github.com/kafka-csv-dump/core"
 	"github.com/kataras/golog"
 )
 
@@ -45,14 +46,14 @@ func launchConsumers() {
 				}
 				defer c.kobj.Close()
 				golog.Infof("Consumer started, topic=%s partition=%d offset=%d", topicConf.Name, partition, startOffset)
-				c.pollTopicPartiton()
+				c.pollTopicPartiton(partition, topicConf)
 			}(partition, topicConf)
 		}
 	}
 	wg.Wait()
 }
 
-func (c *consumer) pollTopicPartiton() {
+func (c *consumer) pollTopicPartiton(partition int, topicConf config.Topic) {
 	for {
 		func() {
 			defer func() {
@@ -70,7 +71,7 @@ func (c *consumer) pollTopicPartiton() {
 			if msg == nil {
 				golog.Errorf("Nil Message on %s %s", "test1", msg.TopicPartition)
 			} else {
-				golog.Infof("Message on %s %s: %s\n", "test1", msg.TopicPartition, string(msg.Value))
+				core.ProcessData(partition, topicConf, msg.Value)
 			}
 		}()
 		time.Sleep(pollingInterval)
